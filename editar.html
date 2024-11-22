@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Eventos por Mês</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            padding: 20px;
+        }
+        .month-section {
+            margin-bottom: 20px;
+        }
+        .month-title {
+            font-size: 24px;
+            color: #4CAF50;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .event-list {
+            list-style: none;
+            padding: 0;
+        }
+        .event-item {
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .event-item.selected {
+            border: 1px solid #4CAF50;
+        }
+        .edit-fields {
+            display: none;
+            margin-top: 10px;
+        }
+        .event-item.selected .edit-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .edit-fields input, .edit-fields textarea {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .edit-fields button {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .save-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .cancel-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+        .delete-month-btn {
+            background-color: #e74c3c;
+            color: white;
+            padding: 8px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .event-form input, .event-form textarea, .event-form button {
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .add-month {
+            margin: 20px 0;
+            background-color: #3a9fd3;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Gerenciar Eventos por Mês</h1>
+        <p>Adicione, edite ou exclua eventos específicos para cada mês.</p>
+    </div>
+
+    <div class="container" id="monthContainer">
+        <!-- Os meses e seus eventos serão carregados aqui -->
+    </div>
+
+    <button class="add-month" onclick="createNewMonth()">Criar Novo Mês</button>
+    <p style="text-align: center;"><a href="exibir.html">Ver Eventos Salvos</a></p>
+
+    <script>
+        let months = JSON.parse(localStorage.getItem('months')) || [];
+
+        // Renderiza os meses e eventos
+        function renderMonths() {
+            const monthContainer = document.getElementById('monthContainer');
+            monthContainer.innerHTML = '';
+
+            months.forEach((month, monthIndex) => {
+                const monthSection = document.createElement('div');
+                monthSection.className = 'month-section';
+
+                // Título do mês com botão de excluir
+                const monthTitle = document.createElement('h2');
+                monthTitle.className = 'month-title';
+                monthTitle.innerHTML = `
+                    ${month.name}
+                    <button class="delete-month-btn" onclick="deleteMonth(${monthIndex})">Excluir Mês</button>
+                `;
+                monthSection.appendChild(monthTitle);
+
+                // Lista de eventos do mês
+                const eventList = document.createElement('ul');
+                eventList.className = 'event-list';
+                month.events.forEach((event, eventIndex) => {
+                    const eventItem = document.createElement('li');
+                    eventItem.className = 'event-item';
+                    eventItem.innerHTML = `
+                        <strong>${event.date}</strong> - ${event.location}: ${event.description}
+                        <div class="edit-fields">
+                            <input type="text" class="edit-date" value="${event.date}" placeholder="Data e Hora">
+                            <input type="text" class="edit-location" value="${event.location}" placeholder="Local">
+                            <textarea class="edit-description" rows="2">${event.description}</textarea>
+                            <button class="save-btn" onclick="saveEvent(${monthIndex}, ${eventIndex}, this)">Salvar</button>
+                            <button class="cancel-btn" onclick="cancelEdit(this)">Cancelar</button>
+                            <button class="delete-btn" onclick="deleteEvent(${monthIndex}, ${eventIndex})">Excluir</button>
+                        </div>
+                    `;
+                    eventItem.addEventListener('click', (e) => {
+                        if (!eventItem.classList.contains('selected')) {
+                            selectEvent(eventItem);
+                        }
+                        e.stopPropagation(); // Evita que o clique desmarque
+                    });
+                    eventList.appendChild(eventItem);
+                });
+                monthSection.appendChild(eventList);
+
+                // Formulário para adicionar eventos ao mês
+                const eventForm = document.createElement('div');
+                eventForm.className = 'event-form';
+                eventForm.innerHTML = `
+                    <input type="text" placeholder="Data e Hora (ex: 22/11 às 09h30)" id="date-${monthIndex}">
+                    <input type="text" placeholder="Local (ex: Comunidade de Campo do Meio)" id="location-${monthIndex}">
+                    <textarea placeholder="Descrição do Evento" id="description-${monthIndex}"></textarea>
+                    <button onclick="addEvent(${monthIndex})">Adicionar Evento</button>
+                `;
+                monthSection.appendChild(eventForm);
+
+                monthContainer.appendChild(monthSection);
+            });
+
+            // Salva as alterações no localStorage
+            localStorage.setItem('months', JSON.stringify(months));
+        }
+
+        // Adiciona um evento a um mês específico
+        function addEvent(monthIndex) {
+            const date = document.getElementById(`date-${monthIndex}`).value.trim();
+            const location = document.getElementById(`location-${monthIndex}`).value.trim();
+            const description = document.getElementById(`description-${monthIndex}`).value.trim();
+
+            if (!date || !location || !description) {
+                alert('Por favor, preencha todos os campos para adicionar um evento.');
+                return;
+            }
+
+            months[monthIndex].events.push({ date, location, description });
+            renderMonths();
+        }
+
+        // Cria um novo mês
+        function createNewMonth() {
+            const monthName = prompt('Digite o nome do novo mês:');
+            if (!monthName) return;
+
+            months.push({ name: monthName, events: [] });
+            renderMonths();
+        }
+
+        // Seleciona um evento para edição
+        function selectEvent(eventItem) {
+            const previouslySelected = document.querySelector('.event-item.selected');
+            if (previouslySelected && previouslySelected !== eventItem) {
+                previouslySelected.classList.remove('selected');
+                previouslySelected.querySelector('.edit-fields').style.display = 'none'; // Esconde os campos de edição do evento anterior
+            }
+
+            eventItem.classList.add('selected');
+            eventItem.querySelector('.edit-fields').style.display = 'flex'; // Mostra os campos de edição do evento atual
+        }
+
+        // Salva as edições feitas em um evento
+        function saveEvent(monthIndex, eventIndex, button) {
+            const eventItem = button.closest('.event-item');
+            const newDate = eventItem.querySelector('.edit-date').value.trim();
+            const newLocation = eventItem.querySelector('.edit-location').value.trim();
+            const newDescription = eventItem.querySelector('.edit-description').value.trim();
+
+            if (!newDate || !newLocation || !newDescription) {
+                alert('Por favor, preencha todos os campos antes de salvar.');
+                return;
+            }
+
+            // Atualiza os dados no array
+            months[monthIndex].events[eventIndex] = { date: newDate, location: newLocation, description: newDescription };
+
+            // Re-renderiza os meses
+            renderMonths();
+        }
+
+        // Cancela a edição
+        function cancelEdit(button) {
+            const eventItem = button.closest('.event-item');
+            eventItem.querySelector('.edit-fields').style.display = 'none';
+            eventItem.classList.remove('selected');
+        }
+
+        // Exclui um evento
+        function deleteEvent(monthIndex, eventIndex) {
+            if (confirm('Você tem certeza de que deseja excluir este evento?')) {
+                months[monthIndex].events.splice(eventIndex, 1);
+                renderMonths();
+            }
+        }
+
+        // Exclui um mês
+        function deleteMonth(monthIndex) {
+            if (confirm('Você tem certeza de que deseja excluir este mês e todos os eventos associados?')) {
+                months.splice(monthIndex, 1);
+                renderMonths();
+            }
+        }
+
+        // Inicializa a renderização dos meses e eventos
+        renderMonths();
+    </script>
+</body>
+</html>

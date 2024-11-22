@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eventos por Mês</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            padding: 20px;
+        }
+        .month-section {
+            margin-bottom: 20px;
+        }
+        .month-title {
+            font-size: 24px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+        }
+        .event-item {
+            background-color: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #3a9fd3;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Programação da Paróquia</h1>
+        <p>Bem-vindo às nossas comunidades! Acompanhe nossas atividades e participe conosco.</p>
+    </div>
+
+    <div class="container" id="monthContainer">
+        <!-- Os meses e eventos serão carregados aqui -->
+    </div>
+
+    <p style="text-align: center;"><a href="editar.html">Gerenciar Eventos</a></p>
+
+    <script>
+        // Função para carregar os meses e eventos do localStorage
+        function loadMonths() {
+            const months = JSON.parse(localStorage.getItem('months')) || [];
+            const monthContainer = document.getElementById('monthContainer');
+
+            if (months.length === 0) {
+                monthContainer.innerHTML = '<p>Nenhum mês ou evento cadastrado.</p>';
+                return;
+            }
+
+            months.forEach(month => {
+                const monthSection = document.createElement('div');
+                monthSection.className = 'month-section';
+
+                const monthTitle = document.createElement('h2');
+                monthTitle.className = 'month-title';
+                monthTitle.textContent = month.name;
+                monthSection.appendChild(monthTitle);
+
+                month.events.forEach(event => {
+                    const eventItem = document.createElement('div');
+                    eventItem.className = 'event-item';
+                    eventItem.innerHTML = `
+                        <strong>${event.date}</strong> - ${event.location}: ${event.description}
+                    `;
+                    monthSection.appendChild(eventItem);
+                });
+
+                monthContainer.appendChild(monthSection);
+            });
+        }
+
+        // Carrega os meses ao abrir a página
+        loadMonths();
+    </script>
+</body>
+</html>
